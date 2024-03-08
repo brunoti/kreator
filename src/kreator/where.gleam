@@ -94,3 +94,9 @@ pub fn type_to_string(
     Or -> string_builder.from_string("OR")
   }
 }
+
+pub fn where_type(
+	where: Where,
+) -> WhereType {
+	where.where_type
+}
