@@ -6,11 +6,22 @@
 ```sh
 gleam add kreator
 ```
+
+This is a very wip query builder made in pure gleam to be used with multiple DB dialects.
+
 ```gleam
-import kreator
+import kreator as k
+import sqlight
 
 pub fn main() {
-  // TODO: An example of the project in use
+    use conn <- sqlight.with_connection(":memory:")
+    let query = k.table("articles") |> k.to_sqlite()
+    sqlight.query(
+        query.sql,
+        on: conn,
+        with: [],
+        expecting: decoder(),
+    )
 }
 ```
 
@@ -23,3 +34,10 @@ gleam run   # Run the project
 gleam test  # Run the tests
 gleam shell # Run an Erlang shell
 ```
+
+#### TODO
+- [ ] add codec support generated from schema files
+- [ ] add joins
+- [ ] add aggregations
+- [ ] add subqueries
+- [ ] add pagination helpers

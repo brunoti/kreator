@@ -1,5 +1,5 @@
 import kreator/dialect.{type Dialect}
-import kreator/utils/string.{wrap_string} as ks
+import kreator/utils/string.{wrap_string} as _
 import gleam/string_builder.{type StringBuilder}
 import gleam/int
 import gleam/string
@@ -11,6 +11,7 @@ pub type Value {
   Int(Int)
   Float(Float)
   Bool(Bool)
+	Raw(String)
 }
 
 pub fn convert(value: Value, dialect: Dialect) -> StringBuilder {
@@ -19,6 +20,7 @@ pub fn convert(value: Value, dialect: Dialect) -> StringBuilder {
     Int(v) -> string_builder.from_string(int.to_string(v))
     Float(v) -> string_builder.from_string(float.to_string(v))
     Bool(v) -> string_builder.from_string(bool.to_string(v) |> string.lowercase)
+		Raw(v) -> string_builder.from_string(v)
   }
 }
 
