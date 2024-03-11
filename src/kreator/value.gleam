@@ -11,7 +11,7 @@ pub type Value {
   Int(Int)
   Float(Float)
   Bool(Bool)
-	Raw(String)
+  Raw(String)
 }
 
 pub fn convert(value: Value, dialect: Dialect) -> StringBuilder {
@@ -19,8 +19,12 @@ pub fn convert(value: Value, dialect: Dialect) -> StringBuilder {
     String(v) -> wrap_string(v, dialect.string_quote(dialect))
     Int(v) -> string_builder.from_string(int.to_string(v))
     Float(v) -> string_builder.from_string(float.to_string(v))
-    Bool(v) -> string_builder.from_string(bool.to_string(v) |> string.lowercase)
-		Raw(v) -> string_builder.from_string(v)
+    Bool(v) ->
+      string_builder.from_string(
+        bool.to_string(v)
+        |> string.lowercase,
+      )
+    Raw(v) -> string_builder.from_string(v)
   }
 }
 

@@ -5,5 +5,5 @@ pub type Query {
 }
 
 pub fn get_sql(query: Query) -> String {
-	query.sql
+  query.sql
 }

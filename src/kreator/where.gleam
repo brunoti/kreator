@@ -16,23 +16,25 @@ pub type Where {
     operator: String,
     value: Value,
   )
-  WhereWrapped(
-		where_type: WhereType,
-		list: List(Where)
-  )
+  WhereWrapped(where_type: WhereType, list: List(Where))
 }
 
 pub fn new_where_list() -> List(Where) {
   []
 }
 
-pub fn flatten(where_list: List(Where)) -> List(#(WhereType, String, String, Value)) {
-	where_list |> list.flat_map(fn(where) {
-		case where {
-			WhereWrapped(_, where_list) -> flatten(where_list)
-			WhereBasic(where_type, column, operator, value) -> [#(where_type, column, operator, value)]
-		}
-	})
+pub fn flatten(
+  where_list: List(Where),
+) -> List(#(WhereType, String, String, Value)) {
+  where_list
+  |> list.flat_map(fn(where) {
+    case where {
+      WhereWrapped(_, where_list) -> flatten(where_list)
+      WhereBasic(where_type, column, operator, value) -> [
+        #(where_type, column, operator, value),
+      ]
+    }
+  })
 }
 
 pub fn add(where_list: List(Where), new_where: Where) -> List(Where) {
@@ -42,10 +44,7 @@ pub fn add(where_list: List(Where), new_where: Where) -> List(Where) {
       head(where_list)
       |> list.append({
         case list.last(where_list) {
-          Ok(w) -> [
-						w,
-            new_where,
-          ]
+          Ok(w) -> [w, new_where]
           Error(_) -> []
         }
       })
@@ -96,21 +95,18 @@ pub fn or_where_equals(
   add(where_list, equals(column, value, where_type: Or))
 }
 
-pub fn type_to_string(
-  value: WhereType,
-  _dialect: Dialect,
-) -> StringBuilder {
+pub fn type_to_string(value: WhereType, _dialect: Dialect) -> StringBuilder {
   case value {
     And -> string_builder.from_string("and")
     Or -> string_builder.from_string("or")
   }
 }
 
-pub fn values(
-	where_list: List(Where),
-) -> List(Value) {
-	where_list |> flatten() |> list.map(fn(item) {
-		let #(_, _, _, value) = item
-		value
-	})
+pub fn values(where_list: List(Where)) -> List(Value) {
+  where_list
+  |> flatten()
+  |> list.map(fn(item) {
+    let #(_, _, _, value) = item
+    value
+  })
 }

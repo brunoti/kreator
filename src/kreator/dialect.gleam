@@ -4,23 +4,23 @@ import kreator/utils/string.{wrap_string} as _
 
 pub type Dialect {
   SQLite
-	Postgres
-	MySQL
+  Postgres
+  MySQL
 }
 
 pub fn symbol_quote(dialect: Dialect) -> String {
   case dialect {
     SQLite -> "`"
-		Postgres -> "\""
-		MySQL -> "`"
+    Postgres -> "\""
+    MySQL -> "`"
   }
 }
 
 pub fn string_quote(dialect: Dialect) -> String {
   case dialect {
     SQLite -> "'"
-		Postgres -> "'"
-		MySQL -> "'"
+    Postgres -> "'"
+    MySQL -> "'"
   }
 }
 
