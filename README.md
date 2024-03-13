@@ -34,9 +34,9 @@ pub fn main() {
         |> k.where(and_where_equals("id", v.int(1)))
         |> k.to_sqlite()
 
-    let assert Ok(_) = kreator_sqlight.run_nil(insert_user_query, on: conn)
+    let assert Ok(_) = ks.run_nil(insert_user_query, on: conn)
 
-    let assert Ok(user) = kreator_sqlight.first(
+    let assert Ok(user) = ks.first(
         select_user_query,
         on: conn,
         expecting: dynamic.tupple3(dynamic.int, dynamic.string, dynamic.string)
