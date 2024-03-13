@@ -11,17 +11,38 @@ This is a very wip query builder made in pure gleam to be used with multiple DB 
 
 ```gleam
 import kreator as k
+import kreator/sqlight as ks
+import kreator/where.{and_where_equals}
+import kreator/value as v
+import gleam/dynamic
 import sqlight
 
 pub fn main() {
     use conn <- sqlight.with_connection(":memory:")
-    let query = k.table("articles") |> k.to_sqlite()
-    sqlight.query(
-        query.sql,
-        on: conn,
-        with: [],
-        expecting: decoder(),
+    let assert Ok(_) = sqlight.exec(
+      "create table users (id integer primary key autoincrement, email text, name text)",
+      conn,
     )
+
+    let insert_user_query =
+        k.table("users")
+        |> k.insert([#("email", v.string("b@b.com")), #("name", v.string("Bruno"))])
+        |> k.to_sqlite()
+
+    let select_user_query =
+        k.table("users")
+        |> k.where(and_where_equals("id", v.int(1)))
+        |> k.to_sqlite()
+
+    let assert Ok(_) = kreator_sqlight.run_nil(insert_user_query, on: conn)
+
+    let assert Ok(user) = kreator_sqlight.first(
+        select_user_query,
+        on: conn,
+        expecting: dynamic.tupple3(dynamic.int, dynamic.string, dynamic.string)
+    )
+
+    io.debug(user) // #(1, "b@b.com", "Bruno")
 }
 ```
 

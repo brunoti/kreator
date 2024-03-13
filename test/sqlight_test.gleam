@@ -36,13 +36,14 @@ pub fn sqlite_insert_test() {
     k.table("users")
     |> k.to_sqlite()
 
-  use _ <- try(kreator_sqlight.run_nil(insert, conn))
-  use _ <- try(kreator_sqlight.run_nil(update, conn))
-  use result <- try(kreator_sqlight.run(
-    select,
-    on: conn,
-    expecting: dynamic.tuple3(dynamic.int, dynamic.string, dynamic.string),
-  ))
+  let assert Ok(_) = kreator_sqlight.run_nil(insert, conn)
+  let assert Ok(_) = kreator_sqlight.run_nil(update, conn)
+  let assert Ok(result) =
+    kreator_sqlight.run(
+      select,
+      on: conn,
+      expecting: dynamic.tuple3(dynamic.int, dynamic.string, dynamic.string),
+    )
 
   should.equal(list.length(result), 1)
   should.equal(result, [#(1, "b@b.com", "Bruno Oliveira")])
