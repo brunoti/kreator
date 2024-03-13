@@ -3,7 +3,7 @@ import gleam/dict
 import gleam/string_builder.{type StringBuilder}
 import kreator/order.{type Direction, type Order}
 import kreator/where.{type Where, WhereBasic, WhereWrapped} as w
-import kreator/value.{type Value}
+import kreator/value.{type Value} as v
 import kreator/dialect.{type Dialect}
 import kreator/query.{type Query, Query}
 import kreator/utils/string.{parenthesify, wrap_string, wrap_string_builder} as _
@@ -64,22 +64,11 @@ pub fn order_by(
   )
 }
 
-fn add_where_clause(blueprint: Blueprint, new_where: Where) -> Blueprint {
-  Blueprint(
-    ..blueprint,
-    where_clauses: w.add(blueprint.where_clauses, new_where),
-  )
-}
-
-pub fn where_equals(
+pub fn where(
   blueprint: Blueprint,
-  column: String,
-  value: Value,
+  fun: fn(List(Where)) -> List(Where),
 ) -> Blueprint {
-  add_where_clause(
-    blueprint,
-    w.equals(column: column, value: value, where_type: w.And),
-  )
+  Blueprint(..blueprint, where_clauses: fun(blueprint.where_clauses))
 }
 
 pub fn and_where(
@@ -105,28 +94,6 @@ pub fn or_where(
       blueprint.where_clauses,
       WhereWrapped(w.Or, fun(w.new_where_list())),
     ),
-  )
-}
-
-pub fn or_where_equals(
-  blueprint: Blueprint,
-  column: String,
-  value: Value,
-) -> Blueprint {
-  add_where_clause(
-    blueprint,
-    w.equals(column: column, value: value, where_type: w.Or),
-  )
-}
-
-pub fn where_equals_string(
-  blueprint: Blueprint,
-  column: String,
-  value: String,
-) -> Blueprint {
-  add_where_clause(
-    blueprint,
-    w.equals(column: column, value: value.as_string(value), where_type: w.And),
   )
 }
 
@@ -158,16 +125,17 @@ fn where_builder_do(
                 )
             }
           }
-          WhereBasic(_, column, operator, _) -> {
+          WhereBasic(_, column, operator, value) -> {
             connector
             |> string_builder.append_builder(dialect.wrap_column(
               column,
               dialect,
             ))
             |> string_builder.append_builder(
-              string_builder.from_strings([" ", operator, " "]),
+              w.operator_to_string(operator, dialect)
+              |> wrap_string_builder(" "),
             )
-            |> string_builder.append("?")
+            |> string_builder.append_builder(v.to_placeholder(value, dialect))
           }
         }
       }),

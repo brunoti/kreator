@@ -12,16 +12,13 @@ pub fn main() {
 pub fn sqlite_insert_test() {
   let query =
     k.table("users")
-    |> k.insert([
-      #("email", v.as_string("b@b.com")),
-      #("name", v.as_string("Bruno")),
-    ])
+    |> k.insert([#("email", v.string("b@b.com")), #("name", v.string("Bruno"))])
     |> k.to_sqlite()
 
   query.sql
   |> should.equal("insert into `users` (`email`, `name`) values (?, ?)")
   query.bindings
-  |> should.equal([v.as_string("b@b.com"), v.as_string("Bruno")])
+  |> should.equal([v.string("b@b.com"), v.string("Bruno")])
 }
 
 pub fn sqlite_select_without_where_test() {
@@ -36,29 +33,35 @@ pub fn sqlite_select_without_where_test() {
 pub fn sqlite_select_with_where_test() {
   let query =
     k.table("users")
-    |> k.where_equals_string("name", "Bruno")
-    |> k.where_equals("id", v.as_int(1))
+    |> k.where(fn(w) {
+      w
+      |> w.and_where_equals("name", v.string("Bruno"))
+      |> w.and_where_equals("id", v.int(1))
+    })
     |> k.to_sqlite()
 
   query.sql
   |> should.equal("select * from `users` where `name` = ? and `id` = ?")
   query.bindings
-  |> should.equal([v.as_string("Bruno"), v.as_int(1)])
+  |> should.equal([v.string("Bruno"), v.int(1)])
 }
 
 pub fn sqlite_select_with_nested_where_test() {
   let query =
     k.table("users")
-    |> k.where_equals("id", v.as_int(1))
+    |> k.where(fn(w) {
+      w
+      |> w.and_where_equals("id", v.int(1))
+    })
     |> k.or_where(fn(where) {
       where
-      |> w.and_where_equals("name", v.as_string("Bruno"))
-      |> w.or_where_equals("id", v.as_int(2))
+      |> w.and_where_equals("name", v.string("Bruno"))
+      |> w.or_where_equals("id", v.int(2))
     })
     |> k.and_where(fn(where) {
       where
-      |> w.and_where_equals("name", v.as_string("Carlos"))
-      |> w.and_where_equals("id", v.as_int(3))
+      |> w.and_where_equals("name", v.string("Carlos"))
+      |> w.and_where_equals("id", v.int(3))
     })
     |> k.to_sqlite()
 
@@ -68,41 +71,38 @@ pub fn sqlite_select_with_nested_where_test() {
   )
   query.bindings
   |> should.equal([
-    v.as_int(1),
-    v.as_string("Bruno"),
-    v.as_int(2),
-    v.as_string("Carlos"),
-    v.as_int(3),
+    v.int(1),
+    v.string("Bruno"),
+    v.int(2),
+    v.string("Carlos"),
+    v.int(3),
   ])
 }
 
 pub fn sqlite_update_test() {
   let query =
     k.table("users")
-    |> k.update([
-      #("email", v.as_string("b@b.com")),
-      #("name", v.as_string("Bruno")),
-    ])
-    |> k.where_equals("id", v.as_int(1))
+    |> k.update([#("email", v.string("b@b.com")), #("name", v.string("Bruno"))])
+    |> k.where(w.and_where_equals(_, "id", v.int(1)))
     |> k.to_sqlite()
 
   query.sql
   |> should.equal("update `users` set `email` = ?, `name` = ? where `id` = ?")
   query.bindings
-  |> should.equal([v.as_string("b@b.com"), v.as_string("Bruno"), v.as_int(1)])
+  |> should.equal([v.string("b@b.com"), v.string("Bruno"), v.int(1)])
 }
 
 pub fn sqlite_delete_test() {
   let query =
     k.table("users")
-    |> k.where_equals("id", v.as_int(1))
+    |> k.where(w.and_where_equals(_, "id", v.int(1)))
     |> k.delete()
     |> k.to_sqlite()
 
   query.sql
   |> should.equal("delete from `users` where `id` = ?")
   query.bindings
-  |> should.equal([v.as_int(1)])
+  |> should.equal([v.int(1)])
 }
 
 pub fn sqlite_select_with_order_by_test() {

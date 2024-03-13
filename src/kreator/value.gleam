@@ -1,10 +1,12 @@
 import kreator/dialect.{type Dialect}
-import kreator/utils/string.{wrap_string} as _
+import kreator/utils/string.{parenthesify, wrap_string} as _
 import gleam/string_builder.{type StringBuilder}
 import gleam/int
 import gleam/string
+import gleam/list
 import gleam/float
 import gleam/bool
+import sqlight
 
 pub type Value {
   String(String)
@@ -12,26 +14,47 @@ pub type Value {
   Float(Float)
   Bool(Bool)
   Raw(String)
+  Null
+  List(List(Value))
 }
 
-pub fn convert(value: Value, dialect: Dialect) -> StringBuilder {
+pub fn to_placeholder(value: Value, dialect: Dialect) -> StringBuilder {
   case value {
-    String(v) -> wrap_string(v, dialect.string_quote(dialect))
-    Int(v) -> string_builder.from_string(int.to_string(v))
-    Float(v) -> string_builder.from_string(float.to_string(v))
-    Bool(v) ->
-      string_builder.from_string(
-        bool.to_string(v)
-        |> string.lowercase,
-      )
     Raw(v) -> string_builder.from_string(v)
+    Null -> string_builder.from_string("null")
+    List(v) ->
+      v
+      |> list.map(to_placeholder(_, dialect))
+      |> string_builder.join(", ")
+      |> parenthesify
+    _ -> string_builder.from_string("?")
   }
 }
 
-pub fn as_int(i: Int) -> Value {
+pub fn int(i: Int) -> Value {
   Int(i)
 }
 
-pub fn as_string(i: String) -> Value {
+pub fn string(i: String) -> Value {
   String(i)
+}
+
+pub fn bool(i: Bool) -> Value {
+  Bool(i)
+}
+
+pub fn float(i: Float) -> Value {
+  Float(i)
+}
+
+pub fn list(i: List(Value)) -> Value {
+  List(i)
+}
+
+pub fn raw(i: String) -> Value {
+  Raw(i)
+}
+
+pub fn null() -> Value {
+  Null
 }
