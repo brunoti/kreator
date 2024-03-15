@@ -15,8 +15,8 @@ pub type Method {
   Delete
 }
 
-pub type Blueprint {
-  Blueprint(
+pub opaque type Plan {
+  Plan(
     method: Method,
     table: String,
     columns: List(String),
@@ -26,8 +26,8 @@ pub type Blueprint {
   )
 }
 
-pub fn table(table: String) -> Blueprint {
-  Blueprint(
+pub fn table(table: String) -> Plan {
+  Plan(
     table: table,
     columns: ["*"],
     order_by: [],
@@ -37,61 +37,61 @@ pub fn table(table: String) -> Blueprint {
   )
 }
 
-pub fn select(blueprint: Blueprint, select: List(String)) -> Blueprint {
-  Blueprint(..blueprint, columns: select, method: Select)
+pub fn select(plan: Plan, select: List(String)) -> Plan {
+  Plan(..plan, columns: select, method: Select)
 }
 
-pub fn insert(blueprint: Blueprint, data: List(#(String, Value))) -> Blueprint {
-  Blueprint(..blueprint, data: data, method: Insert)
+pub fn insert(plan: Plan, data: List(#(String, Value))) -> Plan {
+  Plan(..plan, data: data, method: Insert)
 }
 
-pub fn update(blueprint: Blueprint, data: List(#(String, Value))) -> Blueprint {
-  Blueprint(..blueprint, data: data, method: Update)
+pub fn update(plan: Plan, data: List(#(String, Value))) -> Plan {
+  Plan(..plan, data: data, method: Update)
 }
 
-pub fn delete(blueprint: Blueprint) -> Blueprint {
-  Blueprint(..blueprint, method: Delete)
+pub fn delete(plan: Plan) -> Plan {
+  Plan(..plan, method: Delete)
 }
 
 pub fn order_by(
-  blueprint: Blueprint,
+  plan: Plan,
   column column: String,
   direction direction: Direction,
-) -> Blueprint {
-  Blueprint(
-    ..blueprint,
-    order_by: list.append(blueprint.order_by, [#(column, direction)]),
+) -> Plan {
+  Plan(
+    ..plan,
+    order_by: list.append(plan.order_by, [#(column, direction)]),
   )
 }
 
 pub fn where(
-  blueprint: Blueprint,
+  plan: Plan,
   fun: fn(List(Where)) -> List(Where),
-) -> Blueprint {
-  Blueprint(..blueprint, where_clauses: fun(blueprint.where_clauses))
+) -> Plan {
+  Plan(..plan, where_clauses: fun(plan.where_clauses))
 }
 
 pub fn and_where(
-  blueprint: Blueprint,
+  plan: Plan,
   fun: fn(List(Where)) -> List(Where),
-) -> Blueprint {
-  Blueprint(
-    ..blueprint,
+) -> Plan {
+  Plan(
+    ..plan,
     where_clauses: w.add(
-      blueprint.where_clauses,
+      plan.where_clauses,
       WhereWrapped(w.And, fun(w.new_where_list())),
     ),
   )
 }
 
 pub fn or_where(
-  blueprint: Blueprint,
+  plan: Plan,
   fun: fn(List(Where)) -> List(Where),
-) -> Blueprint {
-  Blueprint(
-    ..blueprint,
+) -> Plan {
+  Plan(
+    ..plan,
     where_clauses: w.add(
-      blueprint.where_clauses,
+      plan.where_clauses,
       WhereWrapped(w.Or, fun(w.new_where_list())),
     ),
   )
@@ -150,41 +150,41 @@ fn where_builder(where_clauses: List(Where), dialect: Dialect) -> StringBuilder 
   }
 }
 
-pub fn to_query(from blueprint: Blueprint, for dialect: Dialect) -> Query {
-  case blueprint.method {
-    Select -> select_builder(blueprint, dialect)
-    Insert -> insert_builder(blueprint, dialect)
-    Update -> update_builder(blueprint, dialect)
-    Delete -> delete_builder(blueprint, dialect)
+pub fn to_query(from plan: Plan, for dialect: Dialect) -> Query {
+  case plan.method {
+    Select -> select_builder(plan, dialect)
+    Insert -> insert_builder(plan, dialect)
+    Update -> update_builder(plan, dialect)
+    Delete -> delete_builder(plan, dialect)
   }
 }
 
-pub fn to_sqlite(blueprint: Blueprint) -> Query {
-  to_query(from: blueprint, for: dialect.SQLite)
+pub fn to_sqlite(plan: Plan) -> Query {
+  to_query(from: plan, for: dialect.SQLite)
 }
 
-pub fn to_postgres(blueprint: Blueprint) -> Query {
-  to_query(from: blueprint, for: dialect.Postgres)
+pub fn to_postgres(plan: Plan) -> Query {
+  to_query(from: plan, for: dialect.Postgres)
 }
 
-pub fn delete_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
-  let where = case list.is_empty(blueprint.where_clauses) {
+fn delete_builder(plan: Plan, dialect: Dialect) -> Query {
+  let where = case list.is_empty(plan.where_clauses) {
     True -> string_builder.from_string("")
     False ->
       string_builder.from_string(" where ")
       |> string_builder.append_builder(where_builder(
-        blueprint.where_clauses,
+        plan.where_clauses,
         dialect,
       ))
   }
 
-  let data = dict.from_list(blueprint.data)
+  let data = dict.from_list(plan.data)
 
   let sql =
     string_builder.new()
     |> string_builder.append("delete from ")
     |> string_builder.append_builder(wrap_string(
-      blueprint.table,
+      plan.table,
       dialect.symbol_quote(dialect),
     ))
     |> string_builder.append_builder(where)
@@ -194,26 +194,26 @@ pub fn delete_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
     sql: sql,
     bindings: data
       |> dict.values()
-      |> list.append(w.values(blueprint.where_clauses)),
+      |> list.append(w.values(plan.where_clauses)),
   )
 }
 
-pub fn update_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
-  let where = case list.is_empty(blueprint.where_clauses) {
+fn update_builder(plan: Plan, dialect: Dialect) -> Query {
+  let where = case list.is_empty(plan.where_clauses) {
     True -> string_builder.from_string("")
     False ->
       string_builder.from_string(" where ")
       |> string_builder.append_builder(where_builder(
-        blueprint.where_clauses,
+        plan.where_clauses,
         dialect,
       ))
   }
-  let data = dict.from_list(blueprint.data)
+  let data = dict.from_list(plan.data)
   let sql =
     string_builder.new()
     |> string_builder.append("update")
     |> string_builder.append_builder(
-      wrap_string(blueprint.table, dialect.symbol_quote(dialect))
+      wrap_string(plan.table, dialect.symbol_quote(dialect))
       |> wrap_string_builder(" "),
     )
     |> string_builder.append("set ")
@@ -233,17 +233,17 @@ pub fn update_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
     sql: sql,
     bindings: data
       |> dict.values()
-      |> list.append(w.values(blueprint.where_clauses)),
+      |> list.append(w.values(plan.where_clauses)),
   )
 }
 
-pub fn insert_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
-  let data = dict.from_list(blueprint.data)
+fn insert_builder(plan: Plan, dialect: Dialect) -> Query {
+  let data = dict.from_list(plan.data)
   let sql =
     string_builder.new()
     |> string_builder.append("insert into")
     |> string_builder.append_builder(
-      wrap_string(blueprint.table, dialect.symbol_quote(dialect))
+      wrap_string(plan.table, dialect.symbol_quote(dialect))
       |> wrap_string_builder(" "),
     )
     |> string_builder.append_builder(
@@ -270,22 +270,22 @@ pub fn insert_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
   )
 }
 
-pub fn select_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
-  let where = case list.is_empty(blueprint.where_clauses) {
+fn select_builder(plan: Plan, dialect: Dialect) -> Query {
+  let where = case list.is_empty(plan.where_clauses) {
     True -> string_builder.from_string("")
     False ->
       string_builder.from_string(" where ")
       |> string_builder.append_builder(where_builder(
-        blueprint.where_clauses,
+        plan.where_clauses,
         dialect,
       ))
   }
-  let order_by = case list.is_empty(blueprint.order_by) {
+  let order_by = case list.is_empty(plan.order_by) {
     True -> string_builder.from_string("")
     False ->
       string_builder.from_string(" order by ")
       |> string_builder.append_builder(
-        blueprint.order_by
+        plan.order_by
         |> list.map(order.to_string(_, dialect))
         |> string_builder.join(", "),
       )
@@ -294,18 +294,18 @@ pub fn select_builder(blueprint: Blueprint, dialect: Dialect) -> Query {
     string_builder.new()
     |> string_builder.append("select ")
     |> string_builder.append_builder(string_builder.join(
-      blueprint.columns
+      plan.columns
         |> list.map(dialect.wrap_column(_, dialect)),
       ", ",
     ))
     |> string_builder.append(" from ")
     |> string_builder.append_builder(wrap_string(
-      blueprint.table,
+      plan.table,
       dialect.symbol_quote(dialect),
     ))
     |> string_builder.append_builder(where)
     |> string_builder.append_builder(order_by)
     |> string_builder.to_string
 
-  Query(sql: sql, bindings: w.values(blueprint.where_clauses))
+  Query(sql: sql, bindings: w.values(plan.where_clauses))
 }
