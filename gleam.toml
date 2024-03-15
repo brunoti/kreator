@@ -6,6 +6,9 @@ repository = { type = "github", user = "brunoti", repo = "kreator" }
 links = [
   { title = "About the creator", href = "https://bop.systems" },
 ]
+internal_modules = [
+  "kreator/utils/*",
+]
 
 # Fill out these fields if you intend to generate HTML documentation or publish
 # your project to the Hex package manager.
@@ -24,6 +27,7 @@ gleam_json = "~> 1.0"
 glance = "~> 0.8"
 simplifile = "~> 1.5"
 sqlight = "~> 0.9"
+rad = "~> 1.2"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"
