@@ -3,8 +3,8 @@ import gleam/dynamic
 import gleam/list
 import kreator as k
 import kreator/value as v
-import kreator/query.{destruct}
-import kreator/sqlight as kreator_sqlight
+import kreator/query
+import kreator/wrappers/sqlight as kreator_sqlight
 import kreator/where as w
 import sqlight
 
