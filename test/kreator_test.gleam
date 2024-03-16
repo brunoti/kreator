@@ -3,6 +3,7 @@ import kreator as k
 import kreator/value as v
 import kreator/where as w
 import kreator/order.{Ascending, Descending}
+import kreator/query.{destruct}
 import gleeunit/should
 
 pub fn main() {
@@ -93,25 +94,24 @@ pub fn sqlite_update_test() {
 }
 
 pub fn sqlite_delete_test() {
-  let query =
+  let #(query, data) =
     k.table("users")
     |> k.where(w.and_where_equals(_, "id", v.int(1)))
     |> k.delete()
     |> k.to_sqlite()
+    |> destruct()
 
-  query.sql
-  |> should.equal("delete from `users` where `id` = ?")
-  query.bindings
-  |> should.equal([v.int(1)])
+  should.equal(query, "delete from `users` where `id` = ?")
+  should.equal(data, [v.int(1)])
 }
 
 pub fn sqlite_select_with_order_by_test() {
-  let query =
+  let #(query, _) =
     k.table("users")
     |> k.order_by("name", Ascending)
     |> k.order_by("id", Descending)
     |> k.to_sqlite()
+    |> destruct()
 
-  query.sql
-  |> should.equal("select * from `users` order by `name` asc, `id` desc")
+  should.equal(query, "select * from `users` order by `name` asc, `id` desc")
 }

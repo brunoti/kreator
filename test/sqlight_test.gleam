@@ -1,9 +1,9 @@
 import gleeunit/should
 import gleam/dynamic
 import gleam/list
-import gleam/result.{try}
 import kreator as k
 import kreator/value as v
+import kreator/query.{destruct}
 import kreator/sqlight as kreator_sqlight
 import kreator/where as w
 import sqlight
