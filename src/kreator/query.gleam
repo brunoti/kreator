@@ -5,5 +5,5 @@ pub type Query {
 }
 
 pub fn destruct(query: Query) -> #(String, List(Value)) {
-	#(query.sql, query.bindings)
+  #(query.sql, query.bindings)
 }

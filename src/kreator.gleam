@@ -1,3 +1,5 @@
+////<details>
+
 import gleam/list
 import gleam/dict
 import gleam/string_builder.{type StringBuilder}
@@ -81,7 +83,6 @@ pub fn select(plan: Plan, select: List(String)) -> Plan {
 ///	  |> to_sqlite()
 ///	  /// ==> "insert into `users` (`name`) values (?)"
 ///	}
-////<details>
 pub fn insert(plan: Plan, data: List(#(String, Value))) -> Plan {
   Plan(..plan, data: data, method: Insert)
 }
@@ -111,10 +112,7 @@ pub fn order_by(
   column column: String,
   direction direction: Direction,
 ) -> Plan {
-  Plan(
-    ..plan,
-    order_by: list.append(plan.order_by, [#(column, direction)]),
-  )
+  Plan(..plan, order_by: list.append(plan.order_by, [#(column, direction)]))
 }
 
 ///
@@ -122,10 +120,7 @@ pub fn order_by(
 /// parameter is the current list of where clauses and it should return
 /// the new where clauses. OBS.: those clauses will be unwrapped.
 ///
-pub fn where(
-  plan: Plan,
-  fun: fn(List(Where)) -> List(Where),
-) -> Plan {
+pub fn where(plan: Plan, fun: fn(List(Where)) -> List(Where)) -> Plan {
   Plan(..plan, where_clauses: fun(plan.where_clauses))
 }
 
@@ -136,10 +131,7 @@ pub fn where(
 /// [or_where](#or_where) is that this function will
 /// generate wrapped where clauses with `AND`.
 ///
-pub fn and_where(
-  plan: Plan,
-  fun: fn(List(Where)) -> List(Where),
-) -> Plan {
+pub fn and_where(plan: Plan, fun: fn(List(Where)) -> List(Where)) -> Plan {
   Plan(
     ..plan,
     where_clauses: w.add(
@@ -156,10 +148,7 @@ pub fn and_where(
 /// [and_where](#and_where) is that this function will
 /// generate wrapped where clauses with `Or`.
 ///
-pub fn or_where(
-  plan: Plan,
-  fun: fn(List(Where)) -> List(Where),
-) -> Plan {
+pub fn or_where(plan: Plan, fun: fn(List(Where)) -> List(Where)) -> Plan {
   Plan(
     ..plan,
     where_clauses: w.add(
@@ -186,7 +175,6 @@ pub fn to_postgres(plan: Plan) -> Query {
 /// ------------------------------
 /// ---------- BUILDERS ----------
 /// ------------------------------
-
 fn where_builder_do(
   where_clauses: List(Where),
   dialect: Dialect,
