@@ -31,7 +31,7 @@ pub fn main() {
 
     let select_user_query =
         k.table("users")
-        |> k.where(and_where_equals("id", v.int(1)))
+        |> k.where(and_where_equals(_, "id", v.int(1)))
         |> k.to_sqlite()
 
     let assert Ok(_) = ks.run_nil(insert_user_query, on: conn)

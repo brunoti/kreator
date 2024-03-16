@@ -4,6 +4,6 @@ pub type Query {
   Query(sql: String, bindings: List(Value))
 }
 
-pub fn get_sql(query: Query) -> String {
-  query.sql
+pub fn destruct(query: Query) -> #(String, List(Value)) {
+	#(query.sql, query.bindings)
 }

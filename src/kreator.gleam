@@ -8,13 +8,20 @@ import kreator/dialect.{type Dialect}
 import kreator/query.{type Query, Query}
 import kreator/utils/string.{parenthesify, wrap_string, wrap_string_builder} as _
 
-pub type Method {
+///
+/// The method of the query.
+/// This is what defines if the query is a select, insert, update, or delete.
+///
+pub opaque type Method {
   Select
   Insert
   Update
   Delete
 }
 
+///
+/// The plan of the query. Contains all the instructions needed to build a query string.
+///
 pub opaque type Plan {
   Plan(
     method: Method,
@@ -26,6 +33,16 @@ pub opaque type Plan {
   )
 }
 
+///
+/// Start a new plan to build a query by setting the table. With just using this
+/// you can already create a simple select like this:
+///
+///```gleam
+/// table("users") |> to_sqlite() /// ==> "select * from `users`"
+///```
+/// If you want to know how to select specific columns you can jump to the [select](#select) function.
+///
+///
 pub fn table(table: String) -> Plan {
   Plan(
     table: table,
@@ -37,22 +54,58 @@ pub fn table(table: String) -> Plan {
   )
 }
 
+///
+/// Set the columns on a select statement. By default the value is `["*"]`.
+///
+///```gleam
+/// table("users") |> select(['name', ['id']]) |> to_sqlite() /// ==> "select `name`, `id` from `users`"
+///```
+///
 pub fn select(plan: Plan, select: List(String)) -> Plan {
   Plan(..plan, columns: select, method: Select)
 }
 
+///
+/// Transforms the plan into an insert query and sets the data to be inserted.
+/// It will not fail if the data is empty, tough the generated query will
+/// probably be invalid.
+///
+/// <details>
+/// <summary>Example</summary>
+///
+///	import kreator.{table, insert, to_sqlite}
+///
+///	pub fn insert_users() {
+///	  table("users")
+///	  |> insert([("name", "Bruno")])
+///	  |> to_sqlite()
+///	  /// ==> "insert into `users` (`name`) values (?)"
+///	}
+////<details>
 pub fn insert(plan: Plan, data: List(#(String, Value))) -> Plan {
   Plan(..plan, data: data, method: Insert)
 }
 
+///
+/// Transforms the plan into an unpdate query and sets the data to be updated.
+/// It will not fail if the data is empty, tough the generated query will
+/// probably be invalid. Also it will not fail if no where was set.
+///
 pub fn update(plan: Plan, data: List(#(String, Value))) -> Plan {
   Plan(..plan, data: data, method: Update)
 }
 
+///
+/// Transforms the plan into a delete query. Will not fail if no where was set.
+///
 pub fn delete(plan: Plan) -> Plan {
   Plan(..plan, method: Delete)
 }
 
+///
+/// Add an order by clause to the plan. Can be used multiple times to add
+/// multiple order by clauses.
+///
 pub fn order_by(
   plan: Plan,
   column column: String,
@@ -64,6 +117,11 @@ pub fn order_by(
   )
 }
 
+///
+/// Used to add where clauses to the plan. Receives a function where the
+/// parameter is the current list of where clauses and it should return
+/// the new where clauses. OBS.: those clauses will be unwrapped.
+///
 pub fn where(
   plan: Plan,
   fun: fn(List(Where)) -> List(Where),
@@ -71,6 +129,13 @@ pub fn where(
   Plan(..plan, where_clauses: fun(plan.where_clauses))
 }
 
+///
+/// Used to add where clauses to the plan. Receives a function where the
+/// parameter is a new empty list of where clauses and it should return
+/// a list clauses. The difference from [where](#where) and
+/// [or_where](#or_where) is that this function will
+/// generate wrapped where clauses with `AND`.
+///
 pub fn and_where(
   plan: Plan,
   fun: fn(List(Where)) -> List(Where),
@@ -84,6 +149,13 @@ pub fn and_where(
   )
 }
 
+///
+/// Used to add where clauses to the plan. Receives a function where the
+/// parameter is a new empty list of where clauses and it should return
+/// a list clauses. The difference from [where](#where) and
+/// [and_where](#and_where) is that this function will
+/// generate wrapped where clauses with `Or`.
+///
 pub fn or_where(
   plan: Plan,
   fun: fn(List(Where)) -> List(Where),
@@ -96,6 +168,24 @@ pub fn or_where(
     ),
   )
 }
+
+///
+/// Builds a query based on a `Plan` for the SQLite dialect.
+///
+pub fn to_sqlite(plan: Plan) -> Query {
+  to_query(from: plan, for: dialect.SQLite)
+}
+
+///
+/// Builds a query based on a `Plan` for the `Postgres`` dialect.
+///
+pub fn to_postgres(plan: Plan) -> Query {
+  to_query(from: plan, for: dialect.Postgres)
+}
+
+/// ------------------------------
+/// ---------- BUILDERS ----------
+/// ------------------------------
 
 fn where_builder_do(
   where_clauses: List(Where),
@@ -150,21 +240,13 @@ fn where_builder(where_clauses: List(Where), dialect: Dialect) -> StringBuilder 
   }
 }
 
-pub fn to_query(from plan: Plan, for dialect: Dialect) -> Query {
+fn to_query(from plan: Plan, for dialect: Dialect) -> Query {
   case plan.method {
     Select -> select_builder(plan, dialect)
     Insert -> insert_builder(plan, dialect)
     Update -> update_builder(plan, dialect)
     Delete -> delete_builder(plan, dialect)
   }
-}
-
-pub fn to_sqlite(plan: Plan) -> Query {
-  to_query(from: plan, for: dialect.SQLite)
-}
-
-pub fn to_postgres(plan: Plan) -> Query {
-  to_query(from: plan, for: dialect.Postgres)
 }
 
 fn delete_builder(plan: Plan, dialect: Dialect) -> Query {
