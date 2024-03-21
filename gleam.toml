@@ -25,6 +25,7 @@ internal_modules = [
 gleam_stdlib = "~> 0.34 or ~> 1.0"
 gleam_json = "~> 1.0"
 sqlight = "~> 0.9"
+gleam_pgo = "~> 0.6"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

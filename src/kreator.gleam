@@ -2,7 +2,11 @@
 
 import gleam/list
 import gleam/dict
+import gleam/pair
 import gleam/string_builder.{type StringBuilder}
+import gleam/string
+import gleam/io
+import gleam/int
 import kreator/order.{type Direction, type Order}
 import kreator/where.{type Where, WhereBasic, WhereWrapped} as w
 import kreator/value.{type Value} as v
@@ -170,6 +174,11 @@ pub fn to_sqlite(plan: Plan) -> Query {
 ///
 pub fn to_postgres(plan: Plan) -> Query {
   to_query(from: plan, for: dialect.Postgres)
+		|> update_query_sql(make_postgres_sql)
+}
+
+fn update_query_sql(query: Query, fun: fn(String) -> String) -> Query {
+	Query(..query, sql: fun(query.sql))
 }
 
 /// ------------------------------
@@ -213,7 +222,7 @@ fn where_builder_do(
               w.operator_to_string(operator, dialect)
               |> wrap_string_builder(" "),
             )
-            |> string_builder.append_builder(v.to_placeholder(value, dialect))
+            |> string_builder.append_builder(v.to_placeholder(value))
           }
         }
       }),
@@ -327,7 +336,7 @@ fn insert_builder(plan: Plan, dialect: Dialect) -> Query {
     |> string_builder.append_builder(
       data
       |> dict.values()
-      |> list.map(fn(_) { string_builder.from_string("?") })
+			|> list.map(v.to_placeholder)
       |> string_builder.join(", ")
       |> parenthesify,
     )
@@ -378,4 +387,20 @@ fn select_builder(plan: Plan, dialect: Dialect) -> Query {
     |> string_builder.to_string
 
   Query(sql: sql, bindings: w.values(plan.where_clauses))
+}
+
+fn make_postgres_sql(sql: String) -> String {
+	sql |> string.to_graphemes()
+	|> list.fold(from: #(0, ""), with: fn(acc, g) {
+			let #(i, last) = acc
+			case g {
+				"?" -> #(i + 1, last <> "$" <> int.to_string(i + 1))
+				_ -> #(i, last <> g)
+			}
+		})
+		|> pair.second
+}
+pub fn main() {
+	let sql = "INSERT INTO users (name, age) VALUES (?, ?)"
+
 }

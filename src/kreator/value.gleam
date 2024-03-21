@@ -1,4 +1,3 @@
-import kreator/dialect.{type Dialect}
 import kreator/utils/string.{parenthesify} as _
 import gleam/string_builder.{type StringBuilder}
 import gleam/list
@@ -13,13 +12,12 @@ pub type Value {
   List(List(Value))
 }
 
-pub fn to_placeholder(value: Value, dialect: Dialect) -> StringBuilder {
+pub fn to_placeholder(value: Value) -> StringBuilder {
   case value {
     Raw(v) -> string_builder.from_string(v)
-    Null -> string_builder.from_string("null")
     List(v) ->
       v
-      |> list.map(to_placeholder(_, dialect))
+			|> list.map(to_placeholder)
       |> string_builder.join(", ")
       |> parenthesify
     _ -> string_builder.from_string("?")
