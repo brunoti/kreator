@@ -1,11 +1,8 @@
-////<details>
-
 import gleam/list
 import gleam/dict
 import gleam/pair
 import gleam/string_builder.{type StringBuilder}
 import gleam/string
-import gleam/io
 import gleam/int
 import kreator/order.{type Direction, type Order}
 import kreator/where.{type Where, WhereBasic, WhereWrapped} as w
@@ -36,6 +33,7 @@ pub opaque type Plan {
     order_by: List(Order),
     where_clauses: List(Where),
     data: List(#(String, Value)),
+    returning: List(String),
   )
 }
 
@@ -53,6 +51,7 @@ pub fn table(table: String) -> Plan {
   Plan(
     table: table,
     columns: ["*"],
+    returning: [],
     order_by: [],
     where_clauses: [],
     data: [],
@@ -64,11 +63,26 @@ pub fn table(table: String) -> Plan {
 /// Set the columns on a select statement. By default the value is `["*"]`.
 ///
 ///```gleam
-/// table("users") |> select(['name', ['id']]) |> to_sqlite() /// ==> "select `name`, `id` from `users`"
+/// table("users") |> select(["name", "id"]) |> to_sqlite() /// ==> "select `name`, `id` from `users`"
 ///```
 ///
 pub fn select(plan: Plan, select: List(String)) -> Plan {
   Plan(..plan, columns: select, method: Select)
+}
+
+///
+/// Set the columns to be returned.
+///
+///```gleam
+/// table("users") |> select(["name", "id"]) |> returning("id") |> to_sqlite() /// ==> "select `name`, `id` from `users` returning `id`"
+///```
+///
+pub fn returning(plan: Plan, returning: List(String)) -> Plan {
+  Plan(..plan, returning: returning)
+}
+
+pub fn not_returning(plan: Plan) -> Plan {
+  Plan(..plan, returning: [])
 }
 
 ///
@@ -87,6 +101,7 @@ pub fn select(plan: Plan, select: List(String)) -> Plan {
 ///	  |> to_sqlite()
 ///	  /// ==> "insert into `users` (`name`) values (?)"
 ///	}
+///</details>
 pub fn insert(plan: Plan, data: List(#(String, Value))) -> Plan {
   Plan(..plan, data: data, method: Insert)
 }
@@ -267,6 +282,7 @@ fn delete_builder(plan: Plan, dialect: Dialect) -> Query {
       dialect.symbol_quote(dialect),
     ))
     |> string_builder.append_builder(where)
+    |> string_builder.append_builder(returning_builder(plan.returning, dialect))
     |> string_builder.to_string
 
   Query(
@@ -306,6 +322,7 @@ fn update_builder(plan: Plan, dialect: Dialect) -> Query {
       |> string_builder.join(", "),
     )
     |> string_builder.append_builder(where)
+    |> string_builder.append_builder(returning_builder(plan.returning, dialect))
     |> string_builder.to_string
 
   Query(
@@ -314,6 +331,19 @@ fn update_builder(plan: Plan, dialect: Dialect) -> Query {
       |> dict.values()
       |> list.append(w.values(plan.where_clauses)),
   )
+}
+
+fn returning_builder(returning: List(String), dialect: Dialect) -> StringBuilder {
+  case list.is_empty(returning) {
+    True -> string_builder.from_string("")
+    False ->
+      string_builder.from_string(" returning ")
+      |> string_builder.append_builder(
+        returning
+        |> list.map(dialect.wrap_column(_, dialect))
+        |> string_builder.join(", "),
+      )
+  }
 }
 
 fn insert_builder(plan: Plan, dialect: Dialect) -> Query {
@@ -340,6 +370,7 @@ fn insert_builder(plan: Plan, dialect: Dialect) -> Query {
       |> string_builder.join(", ")
       |> parenthesify,
     )
+    |> string_builder.append_builder(returning_builder(plan.returning, dialect))
     |> string_builder.to_string
 
   Query(
@@ -369,6 +400,7 @@ fn select_builder(plan: Plan, dialect: Dialect) -> Query {
         |> string_builder.join(", "),
       )
   }
+
   let sql =
     string_builder.new()
     |> string_builder.append("select ")

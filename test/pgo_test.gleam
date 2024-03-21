@@ -43,34 +43,56 @@ pub fn with_connection(do: fn(Connection) -> a) -> a {
 
 pub fn pgo_insert_test() {
   use conn <- with_connection
+  let decoder = dynamic.tuple3(dynamic.int, dynamic.string, dynamic.string)
 
   let insert =
     k.table("users")
     |> k.insert([#("email", v.string("b@b.com")), #("name", v.string("Bruno"))])
+    |> k.returning(["*"])
     |> k.to_postgres()
 
   let update =
     k.table("users")
     |> k.update([#("name", v.string("Bruno Oliveira"))])
     |> k.where(w.and_where_equals(_, "email", v.string("b@b.com")))
+    |> k.returning(["*"])
+    |> k.to_postgres()
+
+  let delete =
+    k.table("users")
+    |> k.where(w.and_where_equals(_, "email", v.string("b@b.com")))
+    |> k.returning(["*"])
+    |> k.delete()
     |> k.to_postgres()
 
   let select =
     k.table("users")
     |> k.to_postgres()
 
-  let assert Ok(_) = kreator_pgo.run_nil(insert, conn)
+  let assert Ok(result) = kreator_pgo.run(insert, on: conn, expecting: decoder)
 
-  let assert Ok(_) = kreator_pgo.run_nil(update, conn)
-  let assert Ok(result) =
-    kreator_pgo.run(
-      select,
-      on: conn,
-      expecting: dynamic.tuple3(dynamic.int, dynamic.string, dynamic.string),
-    )
+  should.equal(result.count, 1)
+  should.equal(result.rows, [#(1, "b@b.com", "Bruno")])
+
+  let assert Ok(result) = kreator_pgo.run(update, on: conn, expecting: decoder)
 
   should.equal(result.count, 1)
   should.equal(result.rows, [#(1, "b@b.com", "Bruno Oliveira")])
+
+  let assert Ok(result) = kreator_pgo.run(select, on: conn, expecting: decoder)
+
+  should.equal(result.count, 1)
+  should.equal(result.rows, [#(1, "b@b.com", "Bruno Oliveira")])
+
+  let assert Ok(result) = kreator_pgo.run(delete, on: conn, expecting: decoder)
+
+  should.equal(result.count, 1)
+  should.equal(result.rows, [#(1, "b@b.com", "Bruno Oliveira")])
+
+  let assert Ok(result) = kreator_pgo.run(select, on: conn, expecting: decoder)
+
+  should.equal(result.count, 0)
+  should.equal(result.rows, [])
 
   Ok(Nil)
 }

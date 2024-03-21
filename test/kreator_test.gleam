@@ -14,10 +14,13 @@ pub fn sqlite_insert_test() {
   let query =
     k.table("users")
     |> k.insert([#("email", v.string("b@b.com")), #("name", v.string("Bruno"))])
+    |> k.returning(["id"])
     |> k.to_sqlite()
 
   query.sql
-  |> should.equal("insert into `users` (`email`, `name`) values (?, ?)")
+  |> should.equal(
+    "insert into `users` (`email`, `name`) values (?, ?) returning `id`",
+  )
   query.bindings
   |> should.equal([v.string("b@b.com"), v.string("Bruno")])
 }
@@ -106,6 +109,17 @@ pub fn sqlite_delete_test() {
 }
 
 pub fn sqlite_select_with_order_by_test() {
+  let #(query, _) =
+    k.table("users")
+    |> k.order_by("name", Ascending)
+    |> k.order_by("id", Descending)
+    |> k.to_sqlite()
+    |> destruct()
+
+  should.equal(query, "select * from `users` order by `name` asc, `id` desc")
+}
+
+pub fn sqlite_select_with_returning_test() {
   let #(query, _) =
     k.table("users")
     |> k.order_by("name", Ascending)
