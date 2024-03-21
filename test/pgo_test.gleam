@@ -5,19 +5,16 @@ import kreator as k
 import kreator/value as v
 import kreator/wrappers/pgo as kreator_pgo
 import kreator/where as w
-import gleam/pgo.{type Connection, default_config, Config}
+import gleam/pgo.{type Connection, Config, default_config}
 
 pub fn with_connection(do: fn(Connection) -> a) -> a {
-  let conn = pgo.connect(Config(
-		..default_config(),
-		user: "bruno",
-	))
+  let conn = pgo.connect(Config(..default_config(), user: "bruno"))
   let assert Ok(_) =
     pgo.execute(
       "DROP TABLE IF EXISTS users;",
       on: conn,
-			expecting: dynamic.dynamic,
-			with: []
+      expecting: dynamic.dynamic,
+      with: [],
     )
   let assert Ok(_) =
     pgo.execute(
@@ -29,19 +26,19 @@ pub fn with_connection(do: fn(Connection) -> a) -> a {
 			);
 		",
       on: conn,
-			expecting: dynamic.dynamic,
-			with: []
+      expecting: dynamic.dynamic,
+      with: [],
     )
   let res = do(conn)
   let assert Ok(_) =
     pgo.execute(
       "DROP TABLE IF EXISTS users;",
       on: conn,
-			expecting: dynamic.dynamic,
-			with: []
+      expecting: dynamic.dynamic,
+      with: [],
     )
-	pgo.disconnect(conn)
-	res
+  pgo.disconnect(conn)
+  res
 }
 
 pub fn pgo_insert_test() {

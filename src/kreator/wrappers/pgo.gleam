@@ -3,7 +3,7 @@ import gleam/dynamic.{type Decoder}
 import gleam/list
 import gleam/result
 import kreator/value.{type Value, Bool, Float, Int, List, Null, Raw, String}
-import gleam/pgo.{type QueryError, type Connection, type Returned}
+import gleam/pgo.{type Connection, type QueryError, type Returned}
 
 fn convert_values(values: List(Value)) -> List(pgo.Value) {
   list.flat_map(values, fn(value) {
@@ -24,7 +24,6 @@ pub fn run(
   on conn: Connection,
   expecting dynamic: Decoder(t),
 ) -> Result(Returned(t), QueryError) {
-
   pgo.execute(
     query.sql,
     with: convert_values(query.bindings),
@@ -33,10 +32,7 @@ pub fn run(
   )
 }
 
-pub fn run_nil(
-  query: Query,
-  on conn: Connection,
-) -> Result(Nil, QueryError) {
+pub fn run_nil(query: Query, on conn: Connection) -> Result(Nil, QueryError) {
   pgo.execute(
     query.sql,
     with: convert_values(query.bindings),

@@ -174,11 +174,11 @@ pub fn to_sqlite(plan: Plan) -> Query {
 ///
 pub fn to_postgres(plan: Plan) -> Query {
   to_query(from: plan, for: dialect.Postgres)
-		|> update_query_sql(make_postgres_sql)
+  |> update_query_sql(make_postgres_sql)
 }
 
 fn update_query_sql(query: Query, fun: fn(String) -> String) -> Query {
-	Query(..query, sql: fun(query.sql))
+  Query(..query, sql: fun(query.sql))
 }
 
 /// ------------------------------
@@ -336,7 +336,7 @@ fn insert_builder(plan: Plan, dialect: Dialect) -> Query {
     |> string_builder.append_builder(
       data
       |> dict.values()
-			|> list.map(v.to_placeholder)
+      |> list.map(v.to_placeholder)
       |> string_builder.join(", ")
       |> parenthesify,
     )
@@ -390,17 +390,18 @@ fn select_builder(plan: Plan, dialect: Dialect) -> Query {
 }
 
 fn make_postgres_sql(sql: String) -> String {
-	sql |> string.to_graphemes()
-	|> list.fold(from: #(0, ""), with: fn(acc, g) {
-			let #(i, last) = acc
-			case g {
-				"?" -> #(i + 1, last <> "$" <> int.to_string(i + 1))
-				_ -> #(i, last <> g)
-			}
-		})
-		|> pair.second
+  sql
+  |> string.to_graphemes()
+  |> list.fold(from: #(0, ""), with: fn(acc, g) {
+    let #(i, last) = acc
+    case g {
+      "?" -> #(i + 1, last <> "$" <> int.to_string(i + 1))
+      _ -> #(i, last <> g)
+    }
+  })
+  |> pair.second
 }
-pub fn main() {
-	let sql = "INSERT INTO users (name, age) VALUES (?, ?)"
 
+pub fn main() {
+  let sql = "INSERT INTO users (name, age) VALUES (?, ?)"
 }
