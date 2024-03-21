@@ -433,7 +433,3 @@ fn make_postgres_sql(sql: String) -> String {
   })
   |> pair.second
 }
-
-pub fn main() {
-  let sql = "INSERT INTO users (name, age) VALUES (?, ?)"
-}
